@@ -4,7 +4,7 @@ from urllib.parse import ParseResult, urlencode, urljoin, urlparse
 import pandas as pd
 import requests
 
-from etl.config import get_config
+from config import get_config
 
 __all__ = ["fetch_events"]
 
@@ -32,7 +32,7 @@ def _build_api_url() -> str:
     return api_url
 
 
-def fetch_events():
+def fetch_events() -> str:
     """Fetch events data from the HTTP Server"""
     api_url = _build_api_url()
     r = requests.get(api_url)
@@ -46,3 +46,5 @@ def fetch_events():
     config = get_config()
     export_path = config.data_dir / f"fetched_events__randomid.csv"
     events_df.to_csv(export_path, index=False)
+
+    return export_path
