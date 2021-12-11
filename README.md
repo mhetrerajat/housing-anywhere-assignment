@@ -10,3 +10,5 @@ Description goes here
 - DDL queries to store the retrieved events
 
 - Add SQL queries for BI tool
+
+- Add Docker Support to run the web server and postgresql database

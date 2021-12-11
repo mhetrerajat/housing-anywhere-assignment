@@ -14,6 +14,9 @@ def raw():
     export_path = fetch_events()
     click.echo(f"Exported fetched events to {export_path}")
 
+# TODO: Implement the preprocess command 
+# Create a `events` table in database to run the analytics queries
+
 
 if __name__ == "__main__":
     cli()

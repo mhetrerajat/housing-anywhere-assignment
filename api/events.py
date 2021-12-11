@@ -6,6 +6,8 @@ bp = Blueprint("events", __name__, url_prefix="/v1/events/")
 
 @bp.route("/", methods=["GET"])
 def fetch_events():
+    # TODO: Fetch data from DB instead of json file
+
     event_id = request.args.get("event_id")
     timeperiod = request.args.get("timeperiod")
 
