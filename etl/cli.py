@@ -25,8 +25,10 @@ def raw(start_time, end_time):
     click.echo(f"Exported fetched events to {export_path}")
 
 
-# TODO: Implement the preprocess command
-# Create a `events` table in database to run the analytics queries
+@cli.command()
+def preprocess():
+    """Preprocess data and loads into analytics DB"""
+    pass
 
 
 if __name__ == "__main__":

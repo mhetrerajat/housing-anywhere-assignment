@@ -6,7 +6,7 @@ import requests
 from config import get_config
 from utils import ETLStage, build_api_fetch_events_url, get_export_filename
 
-__all__ = ["fetch_events"]
+__all__ = ["fetch_events", "preprocess"]
 
 
 def fetch_events(start_time: datetime, end_time: datetime) -> str:
@@ -32,3 +32,7 @@ def fetch_events(start_time: datetime, end_time: datetime) -> str:
         events_df.to_csv(export_path, index=False)
 
     return export_path
+
+
+def preprocess(raw_data_chunk_path: str) -> str:
+    df = pd.read_csv(raw_data_chunk_path)
