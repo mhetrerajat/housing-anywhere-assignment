@@ -1,11 +1,17 @@
 from datetime import datetime
 
+import numpy as np
 import pandas as pd
 import pycountry
 import requests
 
 from etl.config import get_config
-from etl.utils import ETLStage, build_api_fetch_events_url, get_export_filename
+from etl.utils import (
+    ETLStage,
+    build_api_fetch_events_url,
+    get_device_type,
+    get_export_filename,
+)
 
 __all__ = ["fetch_events", "build_datalake"]
 
@@ -43,6 +49,9 @@ def build_datalake(raw_data: pd.DataFrame) -> str:
 
     # Fill `browser` and `os` if already known
     raw_data = _fill_known_user_device_details(raw_df=raw_data)
+
+    # Add `device_type` column
+    raw_data = _add_device_type(raw_df=raw_data)
 
     # `ha_user_id` should be numeric
     raw_data["ha_user_id"] = raw_data["ha_user_id"].str.extract(config.ha_user_id_regex)
@@ -145,4 +154,15 @@ def _fill_known_user_device_details(raw_df: pd.DataFrame) -> pd.DataFrame:
     del raw_df["known_browser"]
     del raw_df["known_os"]
 
+    return raw_df
+
+
+def _add_device_type(raw_df: pd.DataFrame) -> pd.DataFrame:
+    """Add device type based on the `browser` and `os`. The device_type column
+    can only have three values i.e `mobile`, `desktop` and `unknown`"""
+
+    raw_df["device_type"] = np.vectorize(get_device_type)(
+        raw_df["browser"], raw_df["os"]
+    )
+    raw_df = raw_df.astype(dtype={"device_type": "category"})
     return raw_df
