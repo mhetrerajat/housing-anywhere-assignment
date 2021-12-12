@@ -1,27 +1,52 @@
-import pandas as pd
-from flask import Blueprint, request
+from flask import Blueprint, request, current_app
+from markupsafe import escape
+
+from api.db import get_db
+from api.utils import is_valid_datetime
 
 bp = Blueprint("events", __name__, url_prefix="/v1/events/")
 
 
 @bp.route("/", methods=["GET"])
 def fetch_events():
-    # TODO: Fetch data from DB instead of json file
+    event_id = escape(request.args.get("event_id", ""))
+    timeperiod = escape(request.args.get("timeperiod", ""))
 
-    event_id = request.args.get("event_id")
-    timeperiod = request.args.get("timeperiod")
+    db = get_db()
+    cur = db.cursor()
 
-    events_df = pd.read_json("api/events_data.json")
-
-    # Reformat `properties` column
-    properties_df = pd.json_normalize(events_df["properties"])
-    events_df = events_df[["event"]].join(properties_df)
-
+    filter_statements = ""
     if event_id:
-        events_df = events_df[events_df["event"] == event_id]
+        filter_statements += f"WHERE event='{event_id}'"
 
     if timeperiod:
-        start, end = timeperiod.split(":")
-        events_df = events_df[(events_df["time"] >= start) & (events_df["time"] <= end)]
+        start, end = timeperiod.split("::")
 
-    return {"data": events_df.to_dict("records")}
+        if not is_valid_datetime(start):
+            current_app.logger.error(
+                f"Invalid start date in timeperiod parameter : {timeperiod}"
+            )
+
+        if not is_valid_datetime(end):
+            current_app.logger.error(
+                f"Invalid end date in timeperiod parameter : {timeperiod}"
+            )
+
+        if event_id:
+            filter_statements += " AND"
+        else:
+            filter_statements += "WHERE"
+
+        filter_statements += f" time BETWEEN '{start}' AND '{end}'"
+
+    query = f"SELECT * FROM raw_events {filter_statements}"
+
+    data = cur.execute(query).fetchall()
+
+    formatted_response = []
+    for row in data:
+        formatted_row = dict(row)
+        event = formatted_row.pop("event")
+        formatted_response.append({"event": event, "properties": formatted_row})
+
+    return {"data": formatted_response}
