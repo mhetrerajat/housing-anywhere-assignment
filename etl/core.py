@@ -48,6 +48,48 @@ def build_datalake(raw_data: pd.DataFrame) -> str:
     # ha_user_id is integer
     raw_data["ha_user_id"] = raw_data["ha_user_id"].str.extract(config.ha_user_id_regex)
 
+    # Fill ha_user_id if we already know it
+    df = raw_data[raw_data["ha_user_id"].notnull()]
+    user_df = df.groupby(by=["unique_visitor_id"], as_index=False).agg(
+        {"ha_user_id": "first"}
+    )
+    user_df = user_df[["unique_visitor_id", "ha_user_id"]].rename(
+        columns={"ha_user_id": "valid_user_id"}
+    )
+    raw_data = pd.merge(raw_data, user_df, on=["unique_visitor_id"], how="left")
+    raw_data["ha_user_id"] = raw_data["ha_user_id"].fillna(raw_data["valid_user_id"])
+    del raw_data["valid_user_id"]
+    del df
+    del user_df
+
+    # Validate one-to-one relation between unique_visitor_id and ha_user_id
+    df = raw_data[raw_data["ha_user_id"].notnull()]
+    df = df.groupby(by=["unique_visitor_id"], as_index=False).filter(
+        lambda g: (g["ha_user_id"].nunique() > 1)
+    )
+    if not df.empty:
+        print(f"Found inconsistency in {len(df)} rows")
+        print(
+            "Will only keep the latest unique pair of unique_visitor_id and ha_user_id"
+        )
+
+        # Find the most recent pair of unique_visitor_id and ha_user_id
+        latest_df = (
+            df.sort_values(by=["unique_visitor_id", "time"], ascending=[True, False])
+            .groupby(by=["unique_visitor_id"], as_index=False)
+            .agg({"ha_user_id": "first"})
+        )
+
+        # Delete unwanted rows
+        # Old pairs of inconsistent unique_visitor_id and ha_user_id
+        row_to_keep_df = pd.merge(
+            df, latest_df, on=["unique_visitor_id", "ha_user_id"], how="inner"
+        )
+        rows_to_delete_df = pd.concat([df, row_to_keep_df]).drop_duplicates(keep=False)
+        print(f"Deleting {len(rows_to_delete_df)} rows because of inconsistency")
+
+        raw_data = raw_data.loc[~raw_data.index.isin(rows_to_delete_df.index)]
+
     filename = (
         f"{get_export_filename(etl_stage=ETLStage.preprocess, execution_id='test')}.csv"
     )
