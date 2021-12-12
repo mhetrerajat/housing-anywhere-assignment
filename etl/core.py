@@ -41,6 +41,9 @@ def build_datalake(raw_data: pd.DataFrame) -> str:
     # Cleanup country
     raw_data = _preprocess_country_column(df=raw_data)
 
+    # Fill `browser` and `os` if already known
+    raw_data = _fill_known_user_device_details(raw_df=raw_data)
+
     # `ha_user_id` should be numeric
     raw_data["ha_user_id"] = raw_data["ha_user_id"].str.extract(config.ha_user_id_regex)
 
@@ -59,17 +62,17 @@ def build_datalake(raw_data: pd.DataFrame) -> str:
     return export_path
 
 
+#########################################################################
+# Local Helper Functions
+#########################################################################
+
+
 def _preprocess_country_column(df: pd.DataFrame) -> pd.DataFrame:
     """Preprocess and cleanup country column. Replaces country_code to have consistent
     country names across rows"""
     df["country"] = df["country_code"].map(lambda x: pycountry.countries.lookup(x).name)
     del df["country_code"]
     return df
-
-
-#########################################################################
-# Local Helper Functions
-#########################################################################
 
 
 def _fill_known_ha_user_id(raw_df: pd.DataFrame) -> pd.DataFrame:
@@ -117,4 +120,29 @@ def _remove_inconsistent_user_pairs(raw_df: pd.DataFrame) -> pd.DataFrame:
         print(f"Deleting {len(rows_to_delete_df)} rows because of inconsistency")
 
         raw_df = raw_df.loc[~raw_df.index.isin(rows_to_delete_df.index)]
+    return raw_df
+
+
+def _fill_known_user_device_details(raw_df: pd.DataFrame) -> pd.DataFrame:
+    """Fill `browser` and `os` columns if we already know it based on `unique_visitor_id`.
+    The `unique_visitor_id` is assigned by browser so there must be one-to-one relation
+    between device details and `unique_visitor_id`"""
+
+    # `browser` and `os` exists as a pair
+    # i.e either both columns will have values else both will be empty
+    known_df = raw_df[(raw_df["browser"].notnull()) & (raw_df["os"].notnull())]
+    known_df = known_df.groupby(by=["unique_visitor_id"], as_index=False).agg(
+        {"browser": "first", "os": "first"}
+    )
+    known_df = known_df[["unique_visitor_id", "browser", "os"]]
+    known_df = known_df.rename(columns={"browser": "known_browser", "os": "known_os"})
+
+    raw_df = pd.merge(raw_df, known_df, on=["unique_visitor_id"], how="left")
+
+    raw_df["browser"] = raw_df["browser"].fillna(raw_df["known_browser"])
+    raw_df["os"] = raw_df["os"].fillna(raw_df["known_os"])
+
+    del raw_df["known_browser"]
+    del raw_df["known_os"]
+
     return raw_df
