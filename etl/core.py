@@ -3,8 +3,8 @@ from datetime import datetime
 import pandas as pd
 import requests
 
-from config import get_config
-from utils import ETLStage, build_api_fetch_events_url, get_export_filename
+from etl.config import get_config
+from etl.utils import ETLStage, build_api_fetch_events_url, get_export_filename
 
 __all__ = ["fetch_events", "preprocess"]
 

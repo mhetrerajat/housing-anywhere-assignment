@@ -1,7 +1,7 @@
 import click
 
-from core import fetch_events
-from config import get_config
+from etl.core import fetch_events
+from etl.config import get_config
 
 etl_config = get_config()
 

@@ -1,9 +1,8 @@
-from urllib.parse import ParseResult, urlencode, urljoin, urlparse
 from datetime import datetime
-
-from config import get_config
-
 from enum import Enum, unique
+from urllib.parse import ParseResult, urlencode, urljoin, urlparse
+
+from etl.config import get_config
 
 
 @unique
