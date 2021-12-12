@@ -1,6 +1,7 @@
 from datetime import datetime
 
 import pandas as pd
+import pycountry
 import requests
 
 from etl.config import get_config
@@ -34,5 +35,23 @@ def fetch_events(start_time: datetime, end_time: datetime) -> str:
     return export_path
 
 
-def preprocess(raw_data_chunk_path: str) -> str:
-    df = pd.read_csv(raw_data_chunk_path)
+def build_datalake(raw_data: pd.DataFrame) -> str:
+    config = get_config()
+
+    # Cleanup country
+    raw_data["country"] = raw_data["country_code"].map(
+        lambda x: pycountry.countries.lookup(x).name
+    )
+    del raw_data["country_code"]
+
+    # Cleanup user id
+    # ha_user_id is integer
+    raw_data["ha_user_id"] = raw_data["ha_user_id"].str.extract(config.ha_user_id_regex)
+
+    filename = (
+        f"{get_export_filename(etl_stage=ETLStage.preprocess, execution_id='test')}.csv"
+    )
+    export_path = config.data_dir / filename
+    raw_data.to_csv(export_path)
+
+    return export_path

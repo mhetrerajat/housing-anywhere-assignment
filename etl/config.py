@@ -1,5 +1,6 @@
 import dataclasses
 import os
+import re
 from pathlib import Path
 
 __all__ = ["get_config"]
@@ -13,6 +14,8 @@ class Config:
     data_dir: Path = Path("/tmp/housinganywhere_data/")
 
     events_timeperiod_date_format = "%Y-%m-%d %H:%M:%S"
+
+    ha_user_id_regex = re.compile("(\d+)")
 
     @property
     def events_api_url(self) -> str:

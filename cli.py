@@ -1,7 +1,7 @@
 import click
 
 from etl.config import get_config
-from etl.core import fetch_events
+from etl.core import fetch_events, build_datalake
 from etl.io import load
 from etl.utils import ETLStage
 
@@ -31,7 +31,8 @@ def raw(start_time, end_time):
 def preprocess():
     """Preprocess data and loads into analytics DB"""
     for raw_data in load(etl_stage=ETLStage.raw):
-        pass
+        export_path = build_datalake(raw_data)
+        click.echo(f"Exported preprocess data at {export_path}")
 
 
 if __name__ == "__main__":
