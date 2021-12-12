@@ -12,6 +12,7 @@ from etl.utils import (
     get_device_type,
     get_export_filename,
 )
+from etl.io import export_as_file
 
 __all__ = ["fetch_events", "build_datalake"]
 
@@ -30,13 +31,22 @@ def fetch_events(start_time: datetime, end_time: datetime) -> str:
         properties_df = pd.json_normalize(events_df["properties"])
         events_df = events_df[["event"]].join(properties_df)
 
-        config = get_config()
-        filename = get_export_filename(
-            etl_stage=ETLStage.raw,
-            execution_id=f"{start_time.isoformat()}_{end_time.isoformat()}",
+        events_df = events_df.astype(
+            dtype={
+                "ha_user_id": str,
+                "browser": str,
+                "os": str,
+                "country_code": str,
+                "time": "datetime64[ns]",
+            }
         )
-        export_path = config.data_dir / f"{filename}.csv"
-        events_df.to_csv(export_path, index=False)
+
+        execution_id = f"{start_time.isoformat()}_{end_time.isoformat()}".replace(
+            "-", ""
+        ).replace(":", "")
+        export_path = export_as_file(
+            data=events_df, etl_stage=ETLStage.raw, execution_id=execution_id
+        )
 
     return export_path
 
