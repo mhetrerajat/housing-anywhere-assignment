@@ -24,7 +24,10 @@ def cli():
 def raw(start_time, end_time):
     """Fetch events from HTTP Server"""
     export_path = fetch_events(start_time, end_time)
-    click.echo(f"Exported fetched events to {export_path}")
+    if export_path:
+        click.echo(f"Exported fetched events to {export_path}")
+    else:
+        click.echo(f"Found no new events between {start_time} and {end_time}")
 
 
 @cli.command()
