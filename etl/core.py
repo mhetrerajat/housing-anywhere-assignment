@@ -7,7 +7,7 @@ import requests
 from etl.config import get_config
 from etl.utils import ETLStage, build_api_fetch_events_url, get_export_filename
 
-__all__ = ["fetch_events", "preprocess"]
+__all__ = ["fetch_events", "build_datalake"]
 
 
 def fetch_events(start_time: datetime, end_time: datetime) -> str:
@@ -39,31 +39,59 @@ def build_datalake(raw_data: pd.DataFrame) -> str:
     config = get_config()
 
     # Cleanup country
-    raw_data["country"] = raw_data["country_code"].map(
-        lambda x: pycountry.countries.lookup(x).name
-    )
-    del raw_data["country_code"]
+    raw_data = _preprocess_country_column(df=raw_data)
+
+    # `ha_user_id` should be numeric
+    raw_data["ha_user_id"] = raw_data["ha_user_id"].str.extract(config.ha_user_id_regex)
 
     # Cleanup user id
     # ha_user_id is integer
-    raw_data["ha_user_id"] = raw_data["ha_user_id"].str.extract(config.ha_user_id_regex)
+    raw_data = _fill_known_ha_user_id(raw_df=raw_data)
 
-    # Fill ha_user_id if we already know it
-    df = raw_data[raw_data["ha_user_id"].notnull()]
+    # Validate one-to-one relation between unique_visitor_id and ha_user_id
+    raw_data = _remove_inconsistent_user_pairs(raw_df=raw_data)
+
+    filename = (
+        f"{get_export_filename(etl_stage=ETLStage.preprocess, execution_id='test')}.csv"
+    )
+    export_path = config.data_dir / filename
+    raw_data.to_csv(export_path)
+
+    return export_path
+
+
+def _preprocess_country_column(df: pd.DataFrame) -> pd.DataFrame:
+    """Preprocess and cleanup country column. Replaces country_code to have consistent
+    country names across rows"""
+    df["country"] = df["country_code"].map(lambda x: pycountry.countries.lookup(x).name)
+    del df["country_code"]
+    return df
+
+
+#########################################################################
+# Local Helper Functions
+#########################################################################
+
+def _fill_known_ha_user_id(raw_df: pd.DataFrame) -> pd.DataFrame:
+    """Fill `ha_user_id` if we already know it based on `unique_visitor_id`"""
+    df = raw_df[raw_df["ha_user_id"].notnull()]
     user_df = df.groupby(by=["unique_visitor_id"], as_index=False).agg(
         {"ha_user_id": "first"}
     )
     user_df = user_df[["unique_visitor_id", "ha_user_id"]].rename(
         columns={"ha_user_id": "valid_user_id"}
     )
-    raw_data = pd.merge(raw_data, user_df, on=["unique_visitor_id"], how="left")
-    raw_data["ha_user_id"] = raw_data["ha_user_id"].fillna(raw_data["valid_user_id"])
-    del raw_data["valid_user_id"]
-    del df
-    del user_df
+    raw_df = pd.merge(raw_df, user_df, on=["unique_visitor_id"], how="left")
+    raw_df["ha_user_id"] = raw_df["ha_user_id"].fillna(raw_df["valid_user_id"])
+    del raw_df["valid_user_id"]
 
-    # Validate one-to-one relation between unique_visitor_id and ha_user_id
-    df = raw_data[raw_data["ha_user_id"].notnull()]
+    return raw_df
+
+
+def _remove_inconsistent_user_pairs(raw_df: pd.DataFrame) -> pd.DataFrame:
+    """Validate one-to-one relation between unique_visitor_id and ha_user_id.
+    Remove the old inconsistent `unique_visitor_id` and `ha_user_id` pairs"""
+    df = raw_df[raw_df["ha_user_id"].notnull()]
     df = df.groupby(by=["unique_visitor_id"], as_index=False).filter(
         lambda g: (g["ha_user_id"].nunique() > 1)
     )
@@ -88,12 +116,5 @@ def build_datalake(raw_data: pd.DataFrame) -> str:
         rows_to_delete_df = pd.concat([df, row_to_keep_df]).drop_duplicates(keep=False)
         print(f"Deleting {len(rows_to_delete_df)} rows because of inconsistency")
 
-        raw_data = raw_data.loc[~raw_data.index.isin(rows_to_delete_df.index)]
-
-    filename = (
-        f"{get_export_filename(etl_stage=ETLStage.preprocess, execution_id='test')}.csv"
-    )
-    export_path = config.data_dir / filename
-    raw_data.to_csv(export_path)
-
-    return export_path
+        raw_df = raw_df.loc[~raw_df.index.isin(rows_to_delete_df.index)]
+    return raw_df
