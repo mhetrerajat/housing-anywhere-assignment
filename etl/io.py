@@ -14,14 +14,14 @@ __all__ = ["load"]
 def _get_files_by_etl_stage(etl_stage: ETLStage) -> Generator[str, None, None]:
     """Returns absolute file path for all data chunks related to particular etl stage"""
     config = get_config()
-    return Path(config.data_dir).glob(f"{etl_stage.name}__*")
+    return Path(config.data_dir).glob(f"{etl_stage.name}__*.parquet")
 
 
 def load(etl_stage: ETLStage) -> Generator[pd.DataFrame, None, None]:
     """Loads data chunks based on etl stage"""
     files = _get_files_by_etl_stage(etl_stage=etl_stage)
     for filepath in files:
-        yield pd.read_csv(filepath)
+        yield pd.read_parquet(filepath)
 
 
 def export_as_file(data: pd.DataFrame, etl_stage: ETLStage, execution_id: str) -> str:
