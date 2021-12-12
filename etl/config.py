@@ -12,6 +12,8 @@ class Config:
 
     data_dir: Path = Path("/tmp/housinganywhere_data/")
 
+    events_timeperiod_date_format = "%Y-%m-%d %H:%M:%S"
+
     @property
     def events_api_url(self) -> str:
         return f"http://{self.events_api_host}:{self.events_api_port}"
