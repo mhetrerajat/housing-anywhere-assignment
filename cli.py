@@ -1,7 +1,9 @@
 import click
 
-from etl.core import fetch_events
 from etl.config import get_config
+from etl.core import fetch_events
+from etl.io import load
+from etl.utils import ETLStage
 
 etl_config = get_config()
 
@@ -28,7 +30,8 @@ def raw(start_time, end_time):
 @cli.command()
 def preprocess():
     """Preprocess data and loads into analytics DB"""
-    pass
+    for raw_data in load(etl_stage=ETLStage.raw):
+        pass
 
 
 if __name__ == "__main__":
