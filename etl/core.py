@@ -44,8 +44,7 @@ def build_datalake(raw_data: pd.DataFrame) -> str:
     # `ha_user_id` should be numeric
     raw_data["ha_user_id"] = raw_data["ha_user_id"].str.extract(config.ha_user_id_regex)
 
-    # Cleanup user id
-    # ha_user_id is integer
+    # Fill `ha_user_id` if already known
     raw_data = _fill_known_ha_user_id(raw_df=raw_data)
 
     # Validate one-to-one relation between unique_visitor_id and ha_user_id
@@ -71,6 +70,7 @@ def _preprocess_country_column(df: pd.DataFrame) -> pd.DataFrame:
 #########################################################################
 # Local Helper Functions
 #########################################################################
+
 
 def _fill_known_ha_user_id(raw_df: pd.DataFrame) -> pd.DataFrame:
     """Fill `ha_user_id` if we already know it based on `unique_visitor_id`"""
