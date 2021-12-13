@@ -11,7 +11,7 @@ from etl.config import get_config
 from etl.db import DBManager
 from etl.utils import ETLStage, get_export_filename
 
-__all__ = ["load"]
+__all__ = ["load", "flush", "export_as_file", "export_to_db"]
 
 
 def _get_files_by_etl_stage(etl_stage: ETLStage) -> Generator[str, None, None]:
