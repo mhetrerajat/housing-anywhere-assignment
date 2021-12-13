@@ -49,10 +49,10 @@ def raw(start_time: datetime, end_time: datetime):
 
 @cli.command()
 def preprocess():
-    """Preprocess data and loads into analytics DB"""
+    """Preprocess data and exports it to intermediate data store"""
     raw_data = pd.concat([x for x in load(etl_stage=ETLStage.raw)])
-    clean_and_preprocess_data(raw_data)
-    click.echo(f"Exported preprocess data to `analytics` DB")
+    export_path = clean_and_preprocess_data(raw_data)
+    click.echo(f"Exported preprocess data to {export_path}")
 
 
 @cli.command()

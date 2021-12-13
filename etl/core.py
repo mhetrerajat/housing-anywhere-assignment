@@ -55,7 +55,7 @@ def fetch_events(start_time: datetime, end_time: datetime) -> str:
     return export_path
 
 
-def clean_and_preprocess_data(raw_data: pd.DataFrame):
+def clean_and_preprocess_data(raw_data: pd.DataFrame) -> str:
     config = get_config()
 
     raw_data = raw_data.drop_duplicates()
@@ -83,7 +83,10 @@ def clean_and_preprocess_data(raw_data: pd.DataFrame):
         value={col: "" for col in ["browser", "os", "ha_user_id"]}
     )
 
-    export_to_db(data=raw_data)
+    export_path = export_as_file(
+        data=raw_data, etl_stage=ETLStage.preprocess, execution_id="ha"
+    )
+    return export_path
 
 
 def build_report():
