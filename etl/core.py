@@ -98,7 +98,7 @@ def import_preprocess_data():
     # Fetch preprocess data
     pdf = pd.concat([x for x in load(etl_stage=ETLStage.preprocess)])
 
-    _import_device_details(pdf)
+    pdf = _import_device_details(pdf)
 
 
 def build_report():
@@ -222,12 +222,22 @@ def _get_events_per_country() -> pd.DataFrame:
     )
 
 
-def _import_device_details(preprocess_data: pd.DataFrame):
+def _import_device_details(preprocess_data: pd.DataFrame) -> pd.DataFrame:
     df = preprocess_data[["browser", "os", "device_type"]]
 
     # Treat empty strings as NaN
     df = df.replace(r"^\s*$", np.nan, regex=True)
 
-    df = df.drop_duplicates().dropna(subset=["browser", "os"])
+    df = df.drop_duplicates().dropna(subset=["browser", "os"]).reset_index(drop=True)
+
     table = Table("device_details")
     export_to_db(df, table)
+
+    df = df.reset_index().rename(columns={"index": "device_key"})
+    df["device_key"] += 1
+    pdf = pd.merge(preprocess_data, df, on=["browser", "os", "device_type"], how="left")
+    del pdf["browser"]
+    del pdf["os"]
+    del pdf["device_type"]
+
+    return pdf
