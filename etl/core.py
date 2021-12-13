@@ -100,6 +100,8 @@ def import_preprocess_data():
 
     pdf = _import_device_details(pdf)
 
+    pdf = _import_users(pdf)
+
 
 def build_report():
     events_per_country = _get_events_per_country()
@@ -239,5 +241,27 @@ def _import_device_details(preprocess_data: pd.DataFrame) -> pd.DataFrame:
     del pdf["browser"]
     del pdf["os"]
     del pdf["device_type"]
+
+    return pdf
+
+
+def _import_users(preprocess_data: pd.DataFrame) -> pd.DataFrame:
+    df = preprocess_data[["ha_user_id"]]
+
+    df = (
+        df.replace(r"^\s*$", np.nan, regex=True)
+        .drop_duplicates()
+        .dropna(subset=["ha_user_id"])
+        .reset_index(drop=True)
+    )
+
+    table = Table("users")
+    export_to_db(df, table)
+
+    df = df.reset_index().rename(columns={"index": "ha_user_key"})
+    df["ha_user_key"] += 1
+
+    pdf = pd.merge(preprocess_data, df, on=["ha_user_id"], how="left")
+    del pdf["ha_user_id"]
 
     return pdf
