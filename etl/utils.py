@@ -2,6 +2,8 @@ from datetime import datetime
 from enum import Enum, unique
 from urllib.parse import ParseResult, urlencode, urljoin, urlparse
 
+import pycountry_convert as pc
+
 from etl.config import get_config
 
 
@@ -69,3 +71,9 @@ def get_device_type(browser: str, os: str) -> str:
         device_type = DeviceType.unknown
 
     return device_type.value
+
+
+def country_to_continent(country_name: str) -> str:
+    country_alpha2 = pc.country_name_to_country_alpha2(country_name)
+    country_continent_code = pc.country_alpha2_to_continent_code(country_alpha2)
+    return pc.convert_continent_code_to_continent_name(country_continent_code)

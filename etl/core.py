@@ -11,7 +11,12 @@ from pypika.enums import Order
 from etl.config import get_config
 from etl.db import DBManager
 from etl.io import export_as_file, export_to_db, load
-from etl.utils import ETLStage, build_api_fetch_events_url, get_device_type
+from etl.utils import (
+    ETLStage,
+    build_api_fetch_events_url,
+    country_to_continent,
+    get_device_type,
+)
 
 __all__ = [
     "fetch_events",
@@ -101,6 +106,8 @@ def import_preprocess_data():
     pdf = _import_device_details(pdf)
 
     pdf = _import_users(pdf)
+
+    pdf = _import_locations(pdf)
 
 
 def build_report():
@@ -263,5 +270,30 @@ def _import_users(preprocess_data: pd.DataFrame) -> pd.DataFrame:
 
     pdf = pd.merge(preprocess_data, df, on=["ha_user_id"], how="left")
     del pdf["ha_user_id"]
+
+    return pdf
+
+
+def _import_locations(preprocess_data: pd.DataFrame) -> pd.DataFrame:
+    df = preprocess_data[["country"]]
+
+    df = df.drop_duplicates().reset_index(drop=True)
+
+    df["official_country_name"] = df["country"].map(
+        lambda x: pycountry.countries.lookup(x).official_name
+    )
+
+    df["continent"] = np.vectorize(country_to_continent)(df["country"])
+
+    table = Table("locations")
+    export_to_db(df, table)
+
+    df = df.reset_index().rename(columns={"index": "location_key"})
+    df["location_key"] += 1
+
+    pdf = pd.merge(
+        preprocess_data, df[["location_key", "country"]], on=["country"], how="left"
+    )
+    del pdf["country"]
 
     return pdf
