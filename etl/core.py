@@ -4,12 +4,16 @@ import numpy as np
 import pandas as pd
 import pycountry
 import requests
+from pypika import Query, Table
+from pypika import functions as fn
+from pypika.enums import Order
 
 from etl.config import get_config
-from etl.utils import ETLStage, build_api_fetch_events_url, get_device_type
+from etl.db import DBManager
 from etl.io import export_as_file, export_to_db
+from etl.utils import ETLStage, build_api_fetch_events_url, get_device_type
 
-__all__ = ["fetch_events", "build_datalake"]
+__all__ = ["fetch_events", "build_datalake", "build_report"]
 
 
 def fetch_events(start_time: datetime, end_time: datetime) -> str:
@@ -80,6 +84,11 @@ def build_datalake(raw_data: pd.DataFrame):
     )
 
     export_to_db(data=raw_data)
+
+
+def build_report():
+    events_per_country = _get_events_per_country()
+    events_per_country.to_csv("/tmp/events_per_country.csv", index=False)
 
 
 #########################################################################
@@ -177,3 +186,22 @@ def _add_device_type(raw_df: pd.DataFrame) -> pd.DataFrame:
     )
     raw_df = raw_df.astype(dtype={"device_type": "category"})
     return raw_df
+
+
+def _get_events_per_country() -> pd.DataFrame:
+    """Compute number of events per country"""
+    events_table = Table("events")
+    query = (
+        Query.from_(events_table)
+        .select("country", fn.Count("*").as_("nevents"))
+        .groupby("country")
+        .orderby("nevents", order=Order.desc)
+        .orderby("country", order=Order.asc)
+    )
+    query = query.get_sql()
+    db_manager = DBManager()
+    data = db_manager.fetch(query)
+    return pd.DataFrame(
+        data,
+        columns=["country", "nevents"],
+    )

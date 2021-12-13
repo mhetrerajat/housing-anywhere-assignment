@@ -1,12 +1,13 @@
 from datetime import datetime
+
 import click
 import pandas as pd
 
 from etl.config import get_config
-from etl.core import build_datalake, fetch_events
-from etl.io import load, flush
-from etl.utils import ETLStage
+from etl.core import build_datalake, build_report, fetch_events
 from etl.db import init_analytics_schema
+from etl.io import flush, load
+from etl.utils import ETLStage
 
 etl_config = get_config()
 
@@ -19,7 +20,9 @@ def cli():
 @cli.command()
 @click.argument(
     "etl-stage",
-    type=click.Choice([ETLStage.raw.name, ETLStage.preprocess.name], case_sensitive=False),
+    type=click.Choice(
+        [ETLStage.raw.name, ETLStage.preprocess.name], case_sensitive=False
+    ),
 )
 def truncate(etl_stage: str):
     """Delete all files from intermediate data store for particular etl stage"""
@@ -57,6 +60,13 @@ def initdb():
     """Initialize `analytics` database by executing DDL queries"""
     init_analytics_schema()
     click.echo("Initialized `analytics` database")
+
+
+@cli.command()
+def report():
+    """Build sample report based on `analytics` DB"""
+    build_report()
+    click.echo("Exported report")
 
 
 if __name__ == "__main__":
