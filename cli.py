@@ -5,6 +5,7 @@ from etl.config import get_config
 from etl.core import build_datalake, fetch_events
 from etl.io import load
 from etl.utils import ETLStage
+from etl.db import init_analytics_schema
 
 etl_config = get_config()
 
@@ -37,6 +38,13 @@ def preprocess():
     raw_data = pd.concat([x for x in load(etl_stage=ETLStage.raw)])
     export_path = build_datalake(raw_data)
     click.echo(f"Exported preprocess data at {export_path}")
+
+
+@cli.command()
+def initdb():
+    """Initialize `analytics` database by executing DDL queries"""
+    init_analytics_schema()
+    click.echo("Initialized `analytics` database")
 
 
 if __name__ == "__main__":

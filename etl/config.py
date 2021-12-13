@@ -17,9 +17,19 @@ class Config:
 
     ha_user_id_regex = re.compile("(\d+)")
 
+    etl_root_dir = os.path.dirname(os.path.abspath(__file__))
+
     @property
     def events_api_url(self) -> str:
         return f"http://{self.events_api_host}:{self.events_api_port}"
+
+    @property
+    def database_uri(self) -> str:
+        return os.path.join(self.etl_root_dir, "analytics.sqlite")
+
+    @property
+    def analytics_schema_script_path(self) -> str:
+        return os.path.join(self.etl_root_dir, "schema.sql")
 
 
 def get_config() -> Config:
