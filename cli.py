@@ -4,7 +4,7 @@ import click
 import pandas as pd
 
 from etl.config import get_config
-from etl.core import build_datalake, build_report, fetch_events
+from etl.core import clean_and_preprocess_data, build_report, fetch_events
 from etl.db import init_analytics_schema
 from etl.io import flush, load
 from etl.utils import ETLStage
@@ -51,7 +51,7 @@ def raw(start_time: datetime, end_time: datetime):
 def preprocess():
     """Preprocess data and loads into analytics DB"""
     raw_data = pd.concat([x for x in load(etl_stage=ETLStage.raw)])
-    build_datalake(raw_data)
+    clean_and_preprocess_data(raw_data)
     click.echo(f"Exported preprocess data to `analytics` DB")
 
 

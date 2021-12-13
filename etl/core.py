@@ -13,7 +13,7 @@ from etl.db import DBManager
 from etl.io import export_as_file, export_to_db
 from etl.utils import ETLStage, build_api_fetch_events_url, get_device_type
 
-__all__ = ["fetch_events", "build_datalake", "build_report"]
+__all__ = ["fetch_events", "clean_and_preprocess_data", "build_report"]
 
 
 def fetch_events(start_time: datetime, end_time: datetime) -> str:
@@ -55,7 +55,7 @@ def fetch_events(start_time: datetime, end_time: datetime) -> str:
     return export_path
 
 
-def build_datalake(raw_data: pd.DataFrame):
+def clean_and_preprocess_data(raw_data: pd.DataFrame):
     config = get_config()
 
     raw_data = raw_data.drop_duplicates()
