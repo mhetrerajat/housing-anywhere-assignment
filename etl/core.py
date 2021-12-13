@@ -10,10 +10,15 @@ from pypika.enums import Order
 
 from etl.config import get_config
 from etl.db import DBManager
-from etl.io import export_as_file, export_to_db
+from etl.io import export_as_file, export_to_db, load
 from etl.utils import ETLStage, build_api_fetch_events_url, get_device_type
 
-__all__ = ["fetch_events", "clean_and_preprocess_data", "build_report"]
+__all__ = [
+    "fetch_events",
+    "clean_and_preprocess_data",
+    "build_report",
+    "import_preprocess_data",
+]
 
 
 def fetch_events(start_time: datetime, end_time: datetime) -> str:
@@ -87,6 +92,13 @@ def clean_and_preprocess_data(raw_data: pd.DataFrame) -> str:
         data=raw_data, etl_stage=ETLStage.preprocess, execution_id="ha"
     )
     return export_path
+
+
+def import_preprocess_data():
+    # Fetch preprocess data
+    pdf = pd.concat([x for x in load(etl_stage=ETLStage.preprocess)])
+
+    _import_device_details(pdf)
 
 
 def build_report():
@@ -208,3 +220,14 @@ def _get_events_per_country() -> pd.DataFrame:
         data,
         columns=["country", "nevents"],
     )
+
+
+def _import_device_details(preprocess_data: pd.DataFrame):
+    df = preprocess_data[["browser", "os", "device_type"]]
+
+    # Treat empty strings as NaN
+    df = df.replace(r"^\s*$", np.nan, regex=True)
+
+    df = df.drop_duplicates().dropna(subset=["browser", "os"])
+    table = Table("device_details")
+    export_to_db(df, table)

@@ -2,6 +2,7 @@ DROP TABLE IF EXISTS events;
 DROP TABLE IF EXISTS device_details;
 DROP TABLE IF EXISTS locations;
 DROP TABLE IF EXISTS event_date;
+DROP TABLE IF EXISTS users;
 
 -- Facts table
 CREATE TABLE events (

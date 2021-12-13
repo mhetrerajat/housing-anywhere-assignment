@@ -4,7 +4,12 @@ import click
 import pandas as pd
 
 from etl.config import get_config
-from etl.core import clean_and_preprocess_data, build_report, fetch_events
+from etl.core import (
+    build_report,
+    clean_and_preprocess_data,
+    fetch_events,
+    import_preprocess_data,
+)
 from etl.db import init_analytics_schema
 from etl.io import flush, load
 from etl.utils import ETLStage
@@ -60,6 +65,13 @@ def initdb():
     """Initialize `analytics` database by executing DDL queries"""
     init_analytics_schema()
     click.echo("Initialized `analytics` database")
+
+
+@cli.command()
+def importdb():
+    """Imports the preprocessed data into `analytics` DB"""
+    import_preprocess_data()
+    click.echo("Data imported successfully")
 
 
 @cli.command()

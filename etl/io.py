@@ -33,7 +33,7 @@ def export_as_file(data: pd.DataFrame, etl_stage: ETLStage, execution_id: str) -
     schema = get_data_schema(etl_stage)
     table = pa.Table.from_pandas(data, schema=schema)
     filename = get_export_filename(
-        etl_stage=ETLStage.raw,
+        etl_stage=etl_stage,
         execution_id=execution_id,
     )
     export_path = config.data_dir / f"{filename}.parquet"
@@ -61,18 +61,16 @@ def get_data_schema(etl_stage: ETLStage) -> pa.schema:
     return pa.schema(schema)
 
 
-def export_to_db(data: pd.DataFrame):
+def export_to_db(data: pd.DataFrame, table: Table):
     """Export data into database by performing bulk insert operation"""
     db_manager = DBManager()
     cursor = db_manager.get_cursor()
 
     data_cols = data.columns.tolist()
 
-    events_table = Table("events")
-
     sql_statements = ["BEGIN TRANSACTION"]
     for _, row in data.iterrows():
-        q = Query.into(events_table).columns(*data_cols).insert(row.tolist())
+        q = Query.into(table).columns(*data_cols).insert(row.tolist())
         sql_statements.append(q.get_sql())
     sql_statements.append("COMMIT;")
 
