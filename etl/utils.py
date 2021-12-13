@@ -7,8 +7,8 @@ from etl.config import get_config
 
 @unique
 class ETLStage(Enum):
-    raw = 1
-    preprocess = 2
+    raw = "raw"
+    preprocess = "preprocess"
 
 
 @unique

@@ -1,9 +1,10 @@
+from datetime import datetime
 import click
 import pandas as pd
 
 from etl.config import get_config
 from etl.core import build_datalake, fetch_events
-from etl.io import load
+from etl.io import load, flush
 from etl.utils import ETLStage
 from etl.db import init_analytics_schema
 
@@ -17,13 +18,24 @@ def cli():
 
 @cli.command()
 @click.argument(
+    "etl-stage",
+    type=click.Choice([ETLStage.raw.name, ETLStage.preprocess.name], case_sensitive=False),
+)
+def truncate(etl_stage: str):
+    """Delete all files from intermediate data store for particular etl stage"""
+    flush(etl_stage=ETLStage(etl_stage))
+    click.echo("Cleanup `raw` data store")
+
+
+@cli.command()
+@click.argument(
     "start-time",
     type=click.DateTime(formats=[etl_config.events_timeperiod_date_format]),
 )
 @click.argument(
     "end-time", type=click.DateTime(formats=[etl_config.events_timeperiod_date_format])
 )
-def raw(start_time, end_time):
+def raw(start_time: datetime, end_time: datetime):
     """Fetch events from HTTP Server"""
     export_path = fetch_events(start_time, end_time)
     if export_path:
@@ -36,7 +48,7 @@ def raw(start_time, end_time):
 def preprocess():
     """Preprocess data and loads into analytics DB"""
     raw_data = pd.concat([x for x in load(etl_stage=ETLStage.raw)])
-    export_path = build_datalake(raw_data)
+    build_datalake(raw_data)
     click.echo(f"Exported preprocess data to `analytics` DB")
 
 

@@ -1,10 +1,11 @@
+import os
 from pathlib import Path
 from typing import Generator
 
 import pandas as pd
 import pyarrow as pa
 import pyarrow.parquet as pq
-from pypika import Table, Query
+from pypika import Query, Table
 
 from etl.config import get_config
 from etl.db import DBManager
@@ -79,3 +80,10 @@ def export_to_db(data: pd.DataFrame):
         f.write(";/n".join(sql_statements))
 
     cursor.executescript(";\n".join(sql_statements))
+
+
+def flush(etl_stage: ETLStage):
+    """Delete all files of particular etl stage from intermediate data store"""
+    files = _get_files_by_etl_stage(etl_stage=etl_stage)
+    for filepath in files:
+        os.remove(filepath)

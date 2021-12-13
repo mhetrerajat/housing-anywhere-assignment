@@ -6,12 +6,7 @@ import pycountry
 import requests
 
 from etl.config import get_config
-from etl.utils import (
-    ETLStage,
-    build_api_fetch_events_url,
-    get_device_type,
-    get_export_filename,
-)
+from etl.utils import ETLStage, build_api_fetch_events_url, get_device_type
 from etl.io import export_as_file, export_to_db
 
 __all__ = ["fetch_events", "build_datalake"]
@@ -30,6 +25,11 @@ def fetch_events(start_time: datetime, end_time: datetime) -> str:
     if not events_df.empty:
         properties_df = pd.json_normalize(events_df["properties"])
         events_df = events_df[["event"]].join(properties_df)
+
+        # Replace `nan` with empty string
+        events_df = events_df.fillna(
+            value={col: "" for col in ["browser", "os", "ha_user_id"]}
+        )
 
         events_df = events_df.astype(
             dtype={
@@ -78,12 +78,6 @@ def build_datalake(raw_data: pd.DataFrame):
     raw_data = raw_data.fillna(
         value={col: "" for col in ["browser", "os", "ha_user_id"]}
     )
-
-    # filename = (
-    #     f"{get_export_filename(etl_stage=ETLStage.preprocess, execution_id='test')}.csv"
-    # )
-    # export_path = config.data_dir / filename
-    # raw_data.to_csv(export_path)
 
     export_to_db(data=raw_data)
 
