@@ -4,8 +4,10 @@ from typing import Generator
 import pandas as pd
 import pyarrow as pa
 import pyarrow.parquet as pq
+from pypika import Table, Query
 
 from etl.config import get_config
+from etl.db import DBManager
 from etl.utils import ETLStage, get_export_filename
 
 __all__ = ["load"]
@@ -56,3 +58,24 @@ def get_data_schema(etl_stage: ETLStage) -> pa.schema:
     }
     schema = schema_store[etl_stage]
     return pa.schema(schema)
+
+
+def export_to_db(data: pd.DataFrame):
+    """Export data into database by performing bulk insert operation"""
+    db_manager = DBManager()
+    cursor = db_manager.get_cursor()
+
+    data_cols = data.columns.tolist()
+
+    events_table = Table("events")
+
+    sql_statements = ["BEGIN TRANSACTION"]
+    for _, row in data.iterrows():
+        q = Query.into(events_table).columns(*data_cols).insert(row.tolist())
+        sql_statements.append(q.get_sql())
+    sql_statements.append("COMMIT;")
+
+    with open("/tmp/query.txt", "w") as f:
+        f.write(";/n".join(sql_statements))
+
+    cursor.executescript(";\n".join(sql_statements))

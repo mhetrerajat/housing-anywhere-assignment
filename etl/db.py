@@ -17,11 +17,11 @@ class DBManager(object):
         if self.__db is None:
             self.__db = sqlite3.connect(self.config.database_uri)
 
-    def _get_cursor(self):
+    def get_cursor(self):
         return self.__db.cursor()
 
     def fetch(self, query: str) -> List[sqlite3.Row]:
-        cur = self._get_cursor()
+        cur = self.get_cursor()
         return cur.execute(query).fetchall()
 
     def execute_script(self, script_path: str):

@@ -37,7 +37,7 @@ def preprocess():
     """Preprocess data and loads into analytics DB"""
     raw_data = pd.concat([x for x in load(etl_stage=ETLStage.raw)])
     export_path = build_datalake(raw_data)
-    click.echo(f"Exported preprocess data at {export_path}")
+    click.echo(f"Exported preprocess data to `analytics` DB")
 
 
 @cli.command()

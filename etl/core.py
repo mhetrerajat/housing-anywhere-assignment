@@ -12,7 +12,7 @@ from etl.utils import (
     get_device_type,
     get_export_filename,
 )
-from etl.io import export_as_file
+from etl.io import export_as_file, export_to_db
 
 __all__ = ["fetch_events", "build_datalake"]
 
@@ -51,8 +51,10 @@ def fetch_events(start_time: datetime, end_time: datetime) -> str:
     return export_path
 
 
-def build_datalake(raw_data: pd.DataFrame) -> str:
+def build_datalake(raw_data: pd.DataFrame):
     config = get_config()
+
+    raw_data = raw_data.drop_duplicates()
 
     # Cleanup country
     raw_data = _preprocess_country_column(df=raw_data)
@@ -72,13 +74,18 @@ def build_datalake(raw_data: pd.DataFrame) -> str:
     # Validate one-to-one relation between unique_visitor_id and ha_user_id
     raw_data = _remove_inconsistent_user_pairs(raw_df=raw_data)
 
-    filename = (
-        f"{get_export_filename(etl_stage=ETLStage.preprocess, execution_id='test')}.csv"
+    # Replace `nan` with empty string
+    raw_data = raw_data.fillna(
+        value={col: "" for col in ["browser", "os", "ha_user_id"]}
     )
-    export_path = config.data_dir / filename
-    raw_data.to_csv(export_path)
 
-    return export_path
+    # filename = (
+    #     f"{get_export_filename(etl_stage=ETLStage.preprocess, execution_id='test')}.csv"
+    # )
+    # export_path = config.data_dir / filename
+    # raw_data.to_csv(export_path)
+
+    export_to_db(data=raw_data)
 
 
 #########################################################################
