@@ -13,11 +13,11 @@ class Config:
 
     data_dir: Path = Path("/tmp/housinganywhere_data/")
 
-    events_timeperiod_date_format = "%Y-%m-%d %H:%M:%S"
+    events_timeperiod_date_format: str = "%Y-%m-%d %H:%M:%S"
 
-    ha_user_id_regex = re.compile("(\d+)")
+    ha_user_id_regex: re.Pattern = re.compile("(\d+)")
 
-    etl_root_dir = os.path.dirname(os.path.abspath(__file__))
+    etl_root_dir: str = os.path.dirname(os.path.abspath(__file__))
 
     @property
     def events_api_url(self) -> str:
