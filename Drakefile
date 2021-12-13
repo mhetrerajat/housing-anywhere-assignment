@@ -15,14 +15,18 @@
         PREV_TIME=$END_TIME
     done
 
-%data.initdb <- %data.raw:
-    echo "ETL Stage : Init analytics database / Run Migrations"
-    python cli.py initdb
-
-%data.preprocess <- %data.initdb
+%data.preprocess <- %data.raw
     echo "ETL Stage: preprocess"
     python cli.py preprocess
 
-%data.report <- %data.preprocess
+%data.initdb <- %data.preprocess
+    echo "ETL Stage : Init analytics database / Run Migrations"
+    python cli.py initdb
+
+%data.importdb <- %data.initdb
+    echo "ETL Stage : Import preprocessed data into DB"
+    python cli.py importdb
+
+%data.report <- %data.importdb
     echo "ETL Stage: Build sample report"
     python cli.py report
