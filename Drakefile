@@ -22,3 +22,7 @@
 %data.preprocess <- %data.initdb
     echo "ETL Stage: preprocess"
     python cli.py preprocess
+
+%data.report <- %data.preprocess
+    echo "ETL Stage: Build sample report"
+    python cli.py report
