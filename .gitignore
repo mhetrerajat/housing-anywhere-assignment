@@ -133,3 +133,7 @@ dmypy.json
 
 # Drake
 .drake
+
+# DB
+*.sqlite
+*.db
