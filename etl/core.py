@@ -5,7 +5,7 @@ import pandas as pd
 import pycountry
 import requests
 from pandas.tseries.holiday import USFederalHolidayCalendar as HolidayCalendar
-from pypika import Query, Table
+from pypika import CustomFunction, Query, Table
 from pypika import functions as fn
 from pypika.enums import Order
 from pypika.terms import PseudoColumn
@@ -119,7 +119,10 @@ def import_preprocess_data():
 def build_report() -> str:
     export_path = export_report(
         report_name="ha_sample_report",
-        reports_data={"Events Per Country": _get_events_per_country()},
+        reports_data={
+            "Events Per Country": _get_events_per_country(),
+            "Events by User Type": _get_events_by_user_type(),
+        },
     )
     return export_path
 
@@ -245,6 +248,42 @@ def _get_events_per_country() -> pd.DataFrame:
     return pd.DataFrame(
         data,
         columns=["country", "nevents"],
+    )
+
+
+def _get_events_by_user_type() -> pd.DataFrame:
+    """Compute number events for authenticated and unauthenticated users"""
+    events_table = Table("events")
+    users_table = Table("users")
+
+    nevents = PseudoColumn("nevents")
+    user_type = PseudoColumn("user_type")
+
+    iif = CustomFunction(
+        name="iif", params=["condition_column", "true_value", "false_value"]
+    )
+
+    query = (
+        Query.from_(events_table)
+        .left_join(users_table)
+        .on(events_table.ha_user_key == users_table.id)
+        .select(
+            iif(users_table.ha_user_id, "Authenticated", "Unauthenticated").as_(
+                user_type
+            ),
+            fn.Count("*").as_(nevents),
+        )
+        .groupby(user_type)
+        .orderby(nevents, order=Order.desc)
+    )
+
+    query = query.get_sql()
+
+    db_manager = DBManager()
+    data = db_manager.fetch(query)
+    return pd.DataFrame(
+        data,
+        columns=["user_type", "nevents"],
     )
 
 
