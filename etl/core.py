@@ -4,6 +4,7 @@ import numpy as np
 import pandas as pd
 import pycountry
 import requests
+from pandas.tseries.holiday import USFederalHolidayCalendar as HolidayCalendar
 from pypika import Query, Table
 from pypika import functions as fn
 from pypika.enums import Order
@@ -105,6 +106,13 @@ def import_preprocess_data():
     pdf = _import_users(pdf)
 
     pdf = _import_locations(pdf)
+
+    pdf = _import_event_date_dimensions(pdf)
+
+    pdf = pdf.fillna(value="")
+
+    table = Table("events")
+    export_to_db(pdf, table)
 
 
 def build_report():
@@ -299,5 +307,34 @@ def _import_locations(preprocess_data: pd.DataFrame) -> pd.DataFrame:
         preprocess_data, df[["location_key", "country"]], on=["country"], how="left"
     )
     del pdf["country"]
+
+    return pdf
+
+
+def _import_event_date_dimensions(preprocess_data: pd.DataFrame) -> pd.DataFrame:
+    df = preprocess_data[["time"]]
+
+    df = df.drop_duplicates().reset_index(drop=True)
+
+    df.loc[:, "month"] = df["time"].dt.month_name()
+    df.loc[:, "year"] = df["time"].dt.year
+    df.loc[:, "date"] = df["time"].dt.date
+    df.loc[:, "day"] = df["time"].dt.day_name()
+    df.loc[:, "quarter"] = df["time"].dt.to_period("Q").astype(str)
+
+    calendar = HolidayCalendar()
+    holidays = calendar.holidays(start=df["date"].min(), end=df["date"].max())
+    df.loc[:, "is_holiday"] = df["date"].isin(holidays)
+
+    table = Table("event_date")
+    export_to_db(df, table)
+
+    df = df.reset_index().rename(columns={"index": "event_date_key"})
+    df["event_date_key"] += 1
+
+    pdf = pd.merge(
+        preprocess_data, df[["event_date_key", "time"]], on=["time"], how="left"
+    )
+    del pdf["time"]
 
     return pdf
