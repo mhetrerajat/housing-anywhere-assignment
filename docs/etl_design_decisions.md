@@ -4,6 +4,8 @@
 
 The data modeling process follows the Kimball Methodology.
 
+![etl__analytics_data_model](./docs/images/etl__analytics_data_model.png)
+
 ### Grain
 
 In fact table, each row represents an event or interaction user done with the product via browser
