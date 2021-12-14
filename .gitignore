@@ -137,3 +137,6 @@ dmypy.json
 # DB
 *.sqlite
 *.db
+
+# Mac
+.DS_Store

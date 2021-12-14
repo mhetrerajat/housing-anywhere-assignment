@@ -38,3 +38,9 @@ NOTE: All subsequent steps mentioned in the document assumes that virtualenv is 
 ```bash
 pip install -r requirements.txt
 ```
+
+### Project Structure
+
+The project is divided into two main components, which are `api` and `etl`. The `api` module is Flask based REST API which returns events from the DB. It supports fetching events happened between certain timeperiod. The `etl` module implements all the stages of ETL pipeline.
+
+![readme__project_structure](./docs/images/project_structure.png)
