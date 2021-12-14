@@ -8,6 +8,7 @@ from pandas.tseries.holiday import USFederalHolidayCalendar as HolidayCalendar
 from pypika import Query, Table
 from pypika import functions as fn
 from pypika.enums import Order
+from pypika.terms import PseudoColumn
 
 from etl.config import get_config
 from etl.db import DBManager
@@ -219,15 +220,23 @@ def _add_device_type(raw_df: pd.DataFrame) -> pd.DataFrame:
 
 def _get_events_per_country() -> pd.DataFrame:
     """Compute number of events per country"""
+
     events_table = Table("events")
+    locations_table = Table("locations")
+
+    nevents = PseudoColumn("nevents")
+
     query = (
         Query.from_(events_table)
-        .select("country", fn.Count("*").as_("nevents"))
-        .groupby("country")
-        .orderby("nevents", order=Order.desc)
-        .orderby("country", order=Order.asc)
+        .left_join(locations_table)
+        .on(events_table.location_key == locations_table.id)
+        .select(locations_table.country, fn.Count("*").as_("nevents"))
+        .groupby(locations_table.country)
+        .orderby(nevents, order=Order.desc)
+        .orderby(locations_table.country, order=Order.asc)
     )
     query = query.get_sql()
+
     db_manager = DBManager()
     data = db_manager.fetch(query)
     return pd.DataFrame(
