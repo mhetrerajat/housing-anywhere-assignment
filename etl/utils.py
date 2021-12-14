@@ -2,6 +2,7 @@ from datetime import datetime
 from enum import Enum, unique
 from urllib.parse import ParseResult, urlencode, urljoin, urlparse
 
+import pyarrow as pa
 import pycountry_convert as pc
 
 from etl.config import get_config
@@ -77,3 +78,22 @@ def country_to_continent(country_name: str) -> str:
     country_alpha2 = pc.country_name_to_country_alpha2(country_name)
     country_continent_code = pc.country_alpha2_to_continent_code(country_alpha2)
     return pc.convert_continent_code_to_continent_name(country_continent_code)
+
+
+def get_data_schema(etl_stage: ETLStage) -> pa.schema:
+
+    schema_base_fields = [
+        ("event", pa.string()),
+        ("time", pa.timestamp("ns")),
+        ("unique_visitor_id", pa.string()),
+        ("ha_user_id", pa.string()),
+        ("browser", pa.string()),
+        ("os", pa.string()),
+    ]
+
+    schema_store = {
+        etl_stage.raw: schema_base_fields + [("country_code", pa.string())],
+        etl_stage.preprocess: schema_base_fields + [("country", pa.string())],
+    }
+    schema = schema_store[etl_stage]
+    return pa.schema(schema)

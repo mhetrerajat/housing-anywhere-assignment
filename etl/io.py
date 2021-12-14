@@ -9,7 +9,7 @@ from pypika import Query, Table
 
 from etl.config import get_config
 from etl.db import DBManager
-from etl.utils import ETLStage, get_export_filename
+from etl.utils import ETLStage, get_export_filename, get_data_schema
 
 __all__ = ["load", "flush", "export_as_file", "export_to_db"]
 
@@ -39,26 +39,6 @@ def export_as_file(data: pd.DataFrame, etl_stage: ETLStage, execution_id: str) -
     export_path = config.data_dir / f"{filename}.parquet"
     pq.write_table(table, where=export_path)
     return export_path
-
-
-def get_data_schema(etl_stage: ETLStage) -> pa.schema:
-
-    schema_base_fields = [
-        ("event", pa.string()),
-        ("time", pa.timestamp("ns")),
-        ("unique_visitor_id", pa.string()),
-        ("ha_user_id", pa.string()),
-        ("browser", pa.string()),
-        ("os", pa.string()),
-    ]
-
-    schema_store = {
-        etl_stage.raw: schema_base_fields + [("country_code", pa.string())],
-        etl_stage.preprocess: schema_base_fields
-        + [("country", pa.string()), ("device_type", pa.string())],
-    }
-    schema = schema_store[etl_stage]
-    return pa.schema(schema)
 
 
 def export_to_db(data: pd.DataFrame, table: Table):

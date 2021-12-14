@@ -76,9 +76,6 @@ def clean_and_preprocess_data(raw_data: pd.DataFrame) -> str:
     # Fill `browser` and `os` if already known
     raw_data = _fill_known_user_device_details(raw_df=raw_data)
 
-    # Add `device_type` column
-    raw_data = _add_device_type(raw_df=raw_data)
-
     # `ha_user_id` should be numeric
     raw_data["ha_user_id"] = raw_data["ha_user_id"].str.extract(config.ha_user_id_regex)
 
@@ -205,7 +202,7 @@ def _add_device_type(raw_df: pd.DataFrame) -> pd.DataFrame:
     """Add device type based on the `browser` and `os`. The device_type column
     can only have three values i.e `mobile`, `desktop` and `unknown`"""
 
-    raw_df["device_type"] = np.vectorize(get_device_type)(
+    raw_df.loc[:, "device_type"] = np.vectorize(get_device_type)(
         raw_df["browser"], raw_df["os"]
     )
     raw_df = raw_df.astype(dtype={"device_type": "category"})
@@ -232,7 +229,10 @@ def _get_events_per_country() -> pd.DataFrame:
 
 
 def _import_device_details(preprocess_data: pd.DataFrame) -> pd.DataFrame:
-    df = preprocess_data[["browser", "os", "device_type"]]
+    df = preprocess_data[["browser", "os"]]
+
+    # Add `device_type` column
+    df = _add_device_type(raw_df=df)
 
     # Treat empty strings as NaN
     df = df.replace(r"^\s*$", np.nan, regex=True)
@@ -244,10 +244,14 @@ def _import_device_details(preprocess_data: pd.DataFrame) -> pd.DataFrame:
 
     df = df.reset_index().rename(columns={"index": "device_key"})
     df["device_key"] += 1
-    pdf = pd.merge(preprocess_data, df, on=["browser", "os", "device_type"], how="left")
+    pdf = pd.merge(
+        preprocess_data,
+        df[["device_key", "browser", "os"]],
+        on=["browser", "os"],
+        how="left",
+    )
     del pdf["browser"]
     del pdf["os"]
-    del pdf["device_type"]
 
     return pdf
 
