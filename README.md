@@ -1,14 +1,17 @@
 # HousingAnywhere Assignment
 
-Description goes here
+## Overview
 
-## Tasks
-
-- Create an REST API "fetch events" endpoint. The "fetch events" endpoint returns the events based on `event_id` or events between time period.
-- Add script to insert `events_data.json` in SQL database as raw data
-- Implement an ETL to fetch these events from database periodically and store in properly structured format by preprocessing them.
-- DDL queries to store the retrieved events
-- Implement sample report to fetch data from analytics database
+- API
+  - Flask based REST API to fetch events. The endpoint supports returning event between certain time period.
+  - Stored the `events_data.json` data into a SQLite DB to simplify query filtering with the API.
+  - `api/schema.sql` has DDL queries to create an events storage table
+- ETL
+  - Implemented a multi-stage ETL pipeline to periodically fetch events using the REST API, clean and preprocess the data before exporting to Analytics DB
+  - `etl/schema.sql` has all the DDL queries required to create tables in Analytics DB
+  - The Analytics DB followed the Kimball Methodology to model the data into fact-dimension tables.
+  - Implement sample report to fetch data from Analytics DB
+  - ETL pipeline configured using [drake](https://github.com/Factual/drake) (Bonus)
 
 ## Usage
 
@@ -72,7 +75,6 @@ NOTE: The entire ETL pipeline can be triggered at once using a single command. P
 The project is divided into two main components, which are `api` and `etl`. The `api` module is Flask based REST API which returns events from the DB. It supports fetching events happened between certain timeperiod. The `etl` module implements all the stages of ETL pipeline.
 
 ![readme__project_structure](./docs/images/project_structure.png)
-
 
 ### Trigger ETL Pipeline
 
