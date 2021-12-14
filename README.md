@@ -10,7 +10,7 @@
   - Implemented a multi-stage ETL pipeline to periodically fetch events using the REST API, clean and preprocess the data before exporting to Analytics DB
   - `etl/schema.sql` has all the DDL queries required to create tables in Analytics DB
   - The Analytics DB followed the Kimball Methodology to model the data into fact-dimension tables.
-  - Implement sample report to fetch data from Analytics DB
+  - Implement sample report to fetch data from Analytics DB (Bonus)
   - ETL pipeline configured using [drake](https://github.com/Factual/drake) (Bonus)
 
 ## Usage
