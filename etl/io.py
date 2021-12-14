@@ -1,6 +1,6 @@
 import os
 from pathlib import Path
-from typing import Generator
+from typing import Dict, Generator
 
 import pandas as pd
 import pyarrow as pa
@@ -9,9 +9,9 @@ from pypika import Query, Table
 
 from etl.config import get_config
 from etl.db import DBManager
-from etl.utils import ETLStage, get_export_filename, get_data_schema
+from etl.utils import ETLStage, get_data_schema, get_export_filename
 
-__all__ = ["load", "flush", "export_as_file", "export_to_db"]
+__all__ = ["load", "flush", "export_as_file", "export_to_db", "export_report"]
 
 
 def _get_files_by_etl_stage(etl_stage: ETLStage) -> Generator[str, None, None]:
@@ -65,3 +65,14 @@ def flush(etl_stage: ETLStage):
     files = _get_files_by_etl_stage(etl_stage=etl_stage)
     for filepath in files:
         os.remove(filepath)
+
+
+def export_report(report_name: str, reports_data: Dict[str, pd.DataFrame]) -> str:
+    config = get_config()
+
+    report_export_path = os.path.join(config.reports_dir, f"{report_name}.xlsx")
+    with pd.ExcelWriter(report_export_path, engine="xlsxwriter") as writer:
+        for sheet_name, sheet_data in reports_data.items():
+            sheet_data.to_excel(writer, sheet_name=sheet_name, index_label="Row Num #")
+
+    return report_export_path

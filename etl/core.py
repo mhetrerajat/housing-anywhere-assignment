@@ -12,7 +12,7 @@ from pypika.terms import PseudoColumn
 
 from etl.config import get_config
 from etl.db import DBManager
-from etl.io import export_as_file, export_to_db, load
+from etl.io import export_as_file, export_report, export_to_db, load
 from etl.utils import (
     ETLStage,
     build_api_fetch_events_url,
@@ -116,9 +116,12 @@ def import_preprocess_data():
     export_to_db(pdf, table)
 
 
-def build_report():
-    events_per_country = _get_events_per_country()
-    events_per_country.to_csv("/tmp/events_per_country.csv", index=False)
+def build_report() -> str:
+    export_path = export_report(
+        report_name="ha_sample_report",
+        reports_data={"Events Per Country": _get_events_per_country()},
+    )
+    return export_path
 
 
 #########################################################################

@@ -13,6 +13,8 @@ class Config:
 
     data_dir: Path = Path("/tmp/housinganywhere_data/")
 
+    reports_dir: Path = Path("/tmp/housinganywhere_reports/")
+
     events_timeperiod_date_format: str = "%Y-%m-%d %H:%M:%S"
 
     ha_user_id_regex: re.Pattern = re.compile("(\d+)")
@@ -37,5 +39,6 @@ def get_config() -> Config:
 
     # Create directory if missing
     os.makedirs(config.data_dir, exist_ok=True)
+    os.makedirs(config.reports_dir, exist_ok=True)
 
     return config

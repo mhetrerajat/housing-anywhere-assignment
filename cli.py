@@ -77,8 +77,8 @@ def importdb():
 @cli.command()
 def report():
     """Build sample report based on `analytics` DB"""
-    build_report()
-    click.echo("Exported report")
+    export_path = build_report()
+    click.echo(f"Exported report at {export_path}")
 
 
 if __name__ == "__main__":
