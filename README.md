@@ -100,3 +100,7 @@ It shows the order in which stages will run and their interdependency. Type `y` 
 ![drake_etl](./docs/images/drake_etl.png)
 
 </details>
+
+## Documentation
+
+- ![ETL Design Decisions](docs/etl_design_decisions.md)
