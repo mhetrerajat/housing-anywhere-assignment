@@ -84,7 +84,8 @@ def clean_and_preprocess_data(raw_data: pd.DataFrame) -> str:
     # Fill `ha_user_id` if already known
     raw_data = _fill_known_ha_user_id(raw_df=raw_data)
 
-    # Validate one-to-one relation between unique_visitor_id and ha_user_id
+    # Validate many-to-one relation between unique_visitor_id and ha_user_id
+    # Make sure each `unique_visitor_id` should have single ha_user_id
     raw_data = _remove_inconsistent_user_pairs(raw_df=raw_data)
 
     # Replace `nan` with empty string
@@ -157,8 +158,9 @@ def _fill_known_ha_user_id(raw_df: pd.DataFrame) -> pd.DataFrame:
 
 
 def _remove_inconsistent_user_pairs(raw_df: pd.DataFrame) -> pd.DataFrame:
-    """Validate one-to-one relation between unique_visitor_id and ha_user_id.
-    Remove the old inconsistent `unique_visitor_id` and `ha_user_id` pairs"""
+    """Validate many-to-one relation between unique_visitor_id and ha_user_id.
+    Remove the old inconsistent `unique_visitor_id` and `ha_user_id` pairs.
+    Make sure each `unique_visitor_id` should have single ha_user_id"""
     df = raw_df[raw_df["ha_user_id"].notnull()]
     df = df.groupby(by=["unique_visitor_id"], as_index=False).filter(
         lambda g: (g["ha_user_id"].nunique() > 1)
